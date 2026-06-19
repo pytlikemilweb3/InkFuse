@@ -9,6 +9,7 @@
     "compile": "node scripts/compile.js"
   },
   "dependencies": {
+    "@vercel/blob": "^2.4.1",
     "ethers": "^6.16.0",
     "next": "16.2.9",
     "react": "19.2.4",
