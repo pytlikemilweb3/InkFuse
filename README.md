@@ -4,7 +4,7 @@
 
 # InkFuse
 
-*An on-chain ink house — drop a sketch, collect it, resell it, tip the artist. All in USDC, on ARC.*
+*The gallery takes 0% — and the artist keeps getting paid on every resale.*
 
 **→ [inkfuse-arc.vercel.app](https://inkfuse-arc.vercel.app)**
 
