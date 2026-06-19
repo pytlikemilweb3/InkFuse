@@ -47,6 +47,8 @@ export default function Home() {
   const [cap, setCap] = useState("");
   const [roy, setRoy] = useState("10");
   const [dropMsg, setDropMsg] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
@@ -134,6 +136,29 @@ export default function Home() {
     } finally {
       inFlight.current = false;
       setActiveKey(null);
+    }
+  }
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) return setDropMsg("✗ Choose an image file");
+    if (f.size > 4 * 1024 * 1024) return setDropMsg("✗ Image too large — max 4 MB (or paste a URL)");
+    setUploading(true);
+    setDropMsg("Uploading image…");
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      const r = await fetch("/api/upload", { method: "POST", body: fd });
+      const j = (await r.json()) as { url?: string; error?: string };
+      if (!r.ok || !j.url) throw new Error(j.error || "failed");
+      setUri(j.url);
+      setDropMsg("✓ Image uploaded — set a title & price, then drop");
+    } catch {
+      setDropMsg("✗ Upload failed — paste an image URL instead");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -247,9 +272,27 @@ export default function Home() {
             )}
           </div>
           <div className="form-row" style={{ marginBottom: 12 }}>
-            <Field label="Image URL">
-              <input value={uri} onChange={(e) => setUri(e.target.value)} maxLength={400} className="input" placeholder="https://…/sketch.png" disabled={!account} />
-            </Field>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+                <span className="serif italic" style={{ fontSize: 13.5, color: "var(--muted)" }}>Image</span>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={!account || uploading}
+                  style={{ background: "none", border: "none", padding: 0, cursor: account && !uploading ? "pointer" : "not-allowed", color: uploading ? "var(--muted)" : "var(--red)", fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", opacity: account ? 1 : 0.45 }}
+                >
+                  {uploading ? "Uploading…" : "↑ Upload from computer"}
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{ display: "none" }} />
+              </div>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <input value={uri} onChange={(e) => setUri(e.target.value)} maxLength={400} className="input" placeholder="https://…  or upload ↑" disabled={!account} />
+                {looksLikeUrl(uri) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={uri} alt="" onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.visibility = "hidden"; }} style={{ width: 42, height: 42, objectFit: "cover", borderRadius: 3, border: "1px solid var(--line-2)", flexShrink: 0 }} />
+                )}
+              </div>
+            </div>
             <Field label="Title">
               <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className="input" placeholder="Untitled no. 7" disabled={!account} />
             </Field>
