@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
 import { ethers } from "ethers";
-import { ARC_RPC, ARC_CHAIN_HEX, switchToArc } from "./arcNetwork";
-import { ensureDiscovered, pickProvider, pickDetail, setChosenRdns, type Eip1193Provider } from "./wallet";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ensureDiscovered, pickDetail, pickProvider, setChosenRdns, type Eip1193Provider } from "./wallet";
+import { ARC_CHAIN_HEX, ARC_RPC, switchToArc } from "./arcNetwork";
 
-const DISCONNECT_KEY = "inkfuse.disconnected";
+// Persisted flag: once the user explicitly disconnects we stay disconnected
+// across reloads until they connect again. Built from a small prefix so it
+// reads distinctly from the wallet-pinning slot in ./wallet.
+const PERSIST_PREFIX = "ink.session";
+const STAY_DISCONNECTED = `${PERSIST_PREFIX}.optout`;
+
+const isHex = (value: unknown, target: string) =>
+  typeof value === "string" && value.toLowerCase() === target.toLowerCase();
 
 /**
  * Single source of truth for wallet state. Discovers wallets via EIP-6963
@@ -17,14 +24,14 @@ export function useWallet() {
   const [balance, setBalance] = useState("");
   const [chainOk, setChainOk] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const disconnectedRef = useRef(false);
+  const optedOutRef = useRef(false);
   const subRef = useRef<{ provider: Eip1193Provider; cleanup: () => void } | null>(null);
 
   const refreshBalance = useCallback(async (addr: string) => {
     try {
-      const p = new ethers.JsonRpcProvider(ARC_RPC);
-      const b = await p.getBalance(addr);
-      setBalance(parseFloat(ethers.formatEther(b)).toFixed(3));
+      const rpc = new ethers.JsonRpcProvider(ARC_RPC);
+      const wei = await rpc.getBalance(addr);
+      setBalance(parseFloat(ethers.formatEther(wei)).toFixed(3));
     } catch {
       setBalance("—");
     }
@@ -33,10 +40,12 @@ export function useWallet() {
   const subscribe = useCallback(
     (inj: Eip1193Provider) => {
       if (!inj?.on) return;
+      // already bound to this exact provider — nothing to do
       if (subRef.current?.provider === inj) return;
       subRef.current?.cleanup();
-      const onAcc = (a: unknown) => {
-        if (disconnectedRef.current) return;
+
+      const handleAccounts = (a: unknown) => {
+        if (optedOutRef.current) return;
         const list = a as string[];
         if (list.length) {
           setAccount(list[0]);
@@ -47,15 +56,15 @@ export function useWallet() {
           setChainOk(false);
         }
       };
-      const onChain = (c: unknown) =>
-        setChainOk((c as string).toLowerCase() === ARC_CHAIN_HEX.toLowerCase());
-      inj.on("accountsChanged", onAcc);
-      inj.on("chainChanged", onChain);
+      const handleChain = (c: unknown) => setChainOk(isHex(c, ARC_CHAIN_HEX));
+
+      inj.on("accountsChanged", handleAccounts);
+      inj.on("chainChanged", handleChain);
       subRef.current = {
         provider: inj,
         cleanup: () => {
-          inj.removeListener?.("accountsChanged", onAcc);
-          inj.removeListener?.("chainChanged", onChain);
+          inj.removeListener?.("accountsChanged", handleAccounts);
+          inj.removeListener?.("chainChanged", handleChain);
         },
       };
     },
@@ -63,10 +72,10 @@ export function useWallet() {
   );
 
   const connect = useCallback(async () => {
-    disconnectedRef.current = false;
+    optedOutRef.current = false;
     if (typeof window !== "undefined") {
       try {
-        window.localStorage.removeItem(DISCONNECT_KEY);
+        window.localStorage.removeItem(STAY_DISCONNECTED);
       } catch {
         /* ignore */
       }
@@ -89,7 +98,7 @@ export function useWallet() {
       }
       try {
         const id = (await inj.request({ method: "eth_chainId" })) as string;
-        setChainOk(id.toLowerCase() === ARC_CHAIN_HEX.toLowerCase());
+        setChainOk(isHex(id, ARC_CHAIN_HEX));
       } catch {
         setChainOk(false);
       }
@@ -102,10 +111,10 @@ export function useWallet() {
   }, [refreshBalance, subscribe]);
 
   const disconnect = useCallback(() => {
-    disconnectedRef.current = true;
+    optedOutRef.current = true;
     if (typeof window !== "undefined") {
       try {
-        window.localStorage.setItem(DISCONNECT_KEY, "1");
+        window.localStorage.setItem(STAY_DISCONNECTED, "1");
       } catch {
         /* ignore */
       }
@@ -116,14 +125,14 @@ export function useWallet() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage.getItem(DISCONNECT_KEY) === "1") {
-      disconnectedRef.current = true;
+    if (typeof window !== "undefined" && window.localStorage.getItem(STAY_DISCONNECTED) === "1") {
+      optedOutRef.current = true;
     }
     (async () => {
       await ensureDiscovered();
       const inj = pickProvider();
       if (!inj) return;
-      if (!disconnectedRef.current) {
+      if (!optedOutRef.current) {
         try {
           const accs = (await inj.request({ method: "eth_accounts" })) as string[];
           if (accs.length) {
@@ -131,7 +140,7 @@ export function useWallet() {
             refreshBalance(accs[0]);
             inj
               .request({ method: "eth_chainId" })
-              .then((id) => setChainOk((id as string).toLowerCase() === ARC_CHAIN_HEX.toLowerCase()))
+              .then((id) => setChainOk(isHex(id, ARC_CHAIN_HEX)))
               .catch(() => {});
           }
         } catch {

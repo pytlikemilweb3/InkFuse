@@ -15,16 +15,19 @@ interface HeaderProps {
 }
 
 export default function Header({ account, balance, chainOk, connecting, onConnect, onDisconnect }: HeaderProps) {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [justCopied, setJustCopied] = useState(false);
 
-  async function copy() {
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
+  const closeMenu = () => setMenuOpen(false);
+
+  async function copyAddress() {
     try {
       await navigator.clipboard.writeText(account);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
+      setJustCopied(true);
+      setTimeout(() => setJustCopied(false), 1400);
     } catch {
-      /* clipboard blocked */
+      // clipboard unavailable in this context
     }
   }
 
@@ -62,17 +65,17 @@ export default function Header({ account, balance, chainOk, connecting, onConnec
         <div style={{ display: "flex", alignItems: "center", gap: 9, justifyContent: "flex-end", minWidth: 0 }}>
           {account ? (
             <div style={{ position: "relative" }}>
-              <button onClick={() => setOpen((o) => !o)} className="wtag">
+              <button onClick={toggleMenu} className="wtag">
                 <span className="dot" style={{ background: chainOk ? "var(--red)" : "#ff5a4d" }} />
                 <span style={{ fontVariantNumeric: "tabular-nums" }}>{account.slice(0, 5)}…{account.slice(-4)}</span>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s ease", opacity: 0.6 }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ transform: menuOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease", opacity: 0.6 }}>
                   <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
 
-              {open && (
+              {menuOpen ? (
                 <>
-                  <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
+                  <div onClick={closeMenu} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
                   <div className="panel" style={{ position: "absolute", top: "calc(100% + 9px)", right: 0, zIndex: 61, minWidth: 250, overflow: "hidden", boxShadow: "0 20px 50px -16px rgba(0,0,0,0.8)" }}>
                     <div style={{ padding: "14px 15px" }}>
                       <div className="serif italic" style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Connected</div>
@@ -91,16 +94,16 @@ export default function Header({ account, balance, chainOk, connecting, onConnec
                         </button>
                       )}
                     </div>
-                    <button className="menu-item" onClick={copy}>{copied ? "Copied ✓" : "Copy address"}</button>
-                    <a className="menu-item" href={`${ARCSCAN}/address/${account}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)}>View on ArcScan ↗</a>
-                    <button className="menu-item danger" onClick={() => { setOpen(false); onDisconnect(); }}>Disconnect</button>
+                    <button className="menu-item" onClick={copyAddress}>{justCopied ? "Copied ✓" : "Copy address"}</button>
+                    <a className="menu-item" href={`${ARCSCAN}/address/${account}`} target="_blank" rel="noopener noreferrer" onClick={closeMenu}>View on ArcScan ↗</a>
+                    <button className="menu-item danger" onClick={() => { closeMenu(); onDisconnect(); }}>Disconnect</button>
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           ) : (
             <button onClick={onConnect} disabled={connecting} className="btn btn--red">
-              {connecting ? "Connecting…" : "Connect wallet"}
+              {connecting ? "Opening…" : "Open wallet"}
             </button>
           )}
         </div>

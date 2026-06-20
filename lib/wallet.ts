@@ -1,10 +1,19 @@
-// EIP-6963 multi-wallet discovery.
+// ---------------------------------------------------------------------------
+// EIP-6963 multi-wallet discovery
 //
-// When several wallets are installed (Rabby, MetaMask, OKX, Phantom…) they all
-// fight over window.ethereum and requests get swallowed. EIP-6963 lets each
-// wallet announce itself, so we can pick a specific one (Rabby by default)
-// instead of the unreliable window.ethereum — and pin that choice so reads,
-// writes and event listeners all use the same provider.
+// With more than one extension installed (Rabby, MetaMask, OKX, Phantom, …)
+// they all clobber window.ethereum and requests vanish into the wrong one.
+// EIP-6963 has every wallet announce itself, so we can lock onto a single
+// provider (Rabby by preference) and route reads, writes and event listeners
+// through that exact instance instead of the ambiguous window.ethereum.
+// ---------------------------------------------------------------------------
+
+// localStorage slot that remembers which wallet rdns the user pinned.
+const STORE_NS = "ink";
+const PINNED_WALLET_SLOT = `${STORE_NS}:6963:pinned-rdns`;
+
+// Preference order applied when the user has not pinned anything yet.
+const PREFERENCE = ["io.rabby", "io.metamask"];
 
 export interface Eip1193Provider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -19,9 +28,8 @@ interface ProviderDetail {
   provider: Eip1193Provider;
 }
 
+// Every wallet that has announced itself so far this session.
 const discovered: ProviderDetail[] = [];
-const RDNS_KEY = "inkfuse.wallet";
-const PREFERENCE = ["io.rabby", "io.metamask"];
 
 function record(detail?: ProviderDetail) {
   if (!detail?.info?.rdns || !detail.provider) return;
@@ -30,6 +38,7 @@ function record(detail?: ProviderDetail) {
   else discovered[i] = detail;
 }
 
+// Begin listening for announcements as soon as this module loads.
 if (typeof window !== "undefined") {
   window.addEventListener("eip6963:announceProvider", (e: Event) => {
     record((e as CustomEvent<ProviderDetail>).detail);
@@ -37,22 +46,26 @@ if (typeof window !== "undefined") {
   window.dispatchEvent(new Event("eip6963:requestProvider"));
 }
 
+export function setChosenRdns(rdns: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PINNED_WALLET_SLOT, rdns);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function getChosenRdns(): string {
   if (typeof window === "undefined") return "";
   try {
-    return window.localStorage.getItem(RDNS_KEY) || "";
+    return window.localStorage.getItem(PINNED_WALLET_SLOT) || "";
   } catch {
     return "";
   }
 }
 
-export function setChosenRdns(rdns: string) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(RDNS_KEY, rdns);
-  } catch {
-    /* ignore */
-  }
+export function refreshWallets() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("eip6963:requestProvider"));
 }
 
 export function ensureDiscovered(timeoutMs = 250): Promise<void> {
@@ -62,10 +75,10 @@ export function ensureDiscovered(timeoutMs = 250): Promise<void> {
     return Promise.resolve();
   }
   return new Promise<void>((resolve) => {
-    let done = false;
+    let settled = false;
     const finish = () => {
-      if (done) return;
-      done = true;
+      if (settled) return;
+      settled = true;
       window.removeEventListener("eip6963:announceProvider", onAnnounce);
       resolve();
     };
@@ -76,10 +89,6 @@ export function ensureDiscovered(timeoutMs = 250): Promise<void> {
   });
 }
 
-export function refreshWallets() {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event("eip6963:requestProvider"));
-}
-
 export function listWallets() {
   refreshWallets();
   return discovered.map((d) => ({ name: d.info.name, rdns: d.info.rdns, icon: d.info.icon }));
@@ -87,15 +96,18 @@ export function listWallets() {
 
 export function pickDetail(rdns?: string): { provider: Eip1193Provider; rdns: string } | undefined {
   refreshWallets();
+  // 1) honour an explicit request or the pinned choice
   const want = rdns ?? getChosenRdns();
   if (want) {
     const m = discovered.find((d) => d.info.rdns === want);
     if (m) return { provider: m.provider, rdns: m.info.rdns };
   }
+  // 2) fall back through the preference list
   for (const r of PREFERENCE) {
     const m = discovered.find((d) => d.info.rdns === r);
     if (m) return { provider: m.provider, rdns: m.info.rdns };
   }
+  // 3) otherwise just take whatever announced first
   if (discovered[0]) return { provider: discovered[0].provider, rdns: discovered[0].info.rdns };
   return undefined;
 }
@@ -103,5 +115,6 @@ export function pickDetail(rdns?: string): { provider: Eip1193Provider; rdns: st
 export function pickProvider(rdns?: string): Eip1193Provider | undefined {
   const d = pickDetail(rdns);
   if (d) return d.provider;
+  // last resort: the raw injected provider, if any
   return typeof window !== "undefined" ? (window.ethereum as Eip1193Provider | undefined) : undefined;
 }
