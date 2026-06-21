@@ -82,7 +82,7 @@ export default function Header({ account, balance, chainOk, connecting, onConnec
                       <div className="num" style={{ fontSize: 14, color: "var(--bone)" }}>{account.slice(0, 13)}…{account.slice(-6)}</div>
                       <div className="num" style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 6 }}>{balance || "0"} USDC</div>
                     </div>
-                    <div className="menu-item--row">
+                    <div className="ink-row--meta">
                       <span>Network</span>
                       {chainOk ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--bone)", fontWeight: 600 }}>
@@ -94,9 +94,9 @@ export default function Header({ account, balance, chainOk, connecting, onConnec
                         </button>
                       )}
                     </div>
-                    <button className="menu-item" onClick={copyAddress}>{justCopied ? "Copied ✓" : "Copy address"}</button>
-                    <a className="menu-item" href={`${ARCSCAN}/address/${account}`} target="_blank" rel="noopener noreferrer" onClick={closeMenu}>View on ArcScan ↗</a>
-                    <button className="menu-item danger" onClick={() => { closeMenu(); onDisconnect(); }}>Disconnect</button>
+                    <button className="ink-row" onClick={copyAddress}>{justCopied ? "Copied ✓" : "Copy address"}</button>
+                    <a className="ink-row" href={`${ARCSCAN}/address/${account}`} target="_blank" rel="noopener noreferrer" onClick={closeMenu}>View on ArcScan ↗</a>
+                    <button className="ink-row danger" onClick={() => { closeMenu(); onDisconnect(); }}>Disconnect</button>
                   </div>
                 </>
               ) : null}
