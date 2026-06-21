@@ -2,6 +2,8 @@
 
 *A catalogue for an ink house that never closes its doors, and never keeps the float.*
 
+<p align="center"><img src="docs/preview.svg" width="820" alt="InkFuse — drop, collect, resell with trailing royalties, and tip, in USDC on Arc"></p>
+
 There is an old, quiet dishonesty in how drawings get sold. A sketch leaves the artist's hands once, for one sum, and every life it lives afterward — every resale, every quiet appreciation in someone else's collection — happens in a room the artist is no longer allowed to stand in. InkFuse is a small attempt to rebuild that room so the artist is always still inside it.
 
 It is not a minting button. It is the whole house around a piece of work: the wall it first hangs on, the market where it changes hands, the royalty that follows it like a shadow, and the open hand of patronage. A drawing here is not an event that happens once. It is a thing that keeps earning for the person who made it, for as long as anyone still wants it.

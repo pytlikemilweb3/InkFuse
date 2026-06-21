@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 240" width="820" height="240" role="img" aria-label="InkFuse — an on-chain ink house with trailing royalties">
+  <defs>
+    <radialGradient id="ikRoom" cx="82%" cy="-6%" r="95%">
+      <stop offset="0" stop-color="#ff3b2f" stop-opacity="0.12"/>
+      <stop offset="42%" stop-color="#ff3b2f" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#ff3b2f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ikViolet" cx="-4%" cy="12%" r="60%">
+      <stop offset="0" stop-color="#8b7bff" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#8b7bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ikDrop" cx="38%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#ff6a52"/>
+      <stop offset="55%" stop-color="#ff3b2f"/>
+      <stop offset="100%" stop-color="#b51d16"/>
+    </radialGradient>
+    <filter id="ikGrain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0"/>
+    </filter>
+  </defs>
+
+  <!-- gallery wall -->
+  <rect width="820" height="240" fill="#0b0a0c"/>
+  <rect width="820" height="240" fill="url(#ikRoom)"/>
+  <rect width="820" height="240" fill="url(#ikViolet)"/>
+
+  <!-- framed sketch (museum placard) -->
+  <g transform="translate(56,46)">
+    <rect x="0" y="0" width="150" height="150" rx="3" fill="#121016" stroke="#2a2632" stroke-width="1.5"/>
+    <rect x="12" y="12" width="126" height="110" fill="#1a1720" stroke="#3a3447" stroke-width="1"/>
+    <!-- brush-stroke sketch inside the frame -->
+    <path d="M28 96 C 44 40, 70 40, 78 72 S 108 116, 124 56"
+          fill="none" stroke="#ff3b2f" stroke-width="5" stroke-linecap="round" opacity="0.92"/>
+    <path d="M34 104 C 52 70, 70 96, 92 78"
+          fill="none" stroke="#c3bbac" stroke-width="2.2" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="112" cy="40" r="6" fill="#ff6a52" opacity="0.85"/>
+    <!-- placard line -->
+    <line x1="12" y1="132" x2="138" y2="132" stroke="#2a2632"/>
+    <text x="12" y="145" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="11" fill="#8a8378">Untitled · ed. 1/&#8734;</text>
+  </g>
+
+  <!-- giant ink drop, mid -->
+  <g transform="translate(250,120)">
+    <path d="M0 -54 C 26 -16, 40 6, 40 24 A 40 40 0 1 1 -40 24 C -40 6, -26 -16, 0 -54 Z"
+          fill="url(#ikDrop)"/>
+    <ellipse cx="-12" cy="14" rx="11" ry="16" fill="#ffd9cf" opacity="0.35"/>
+    <!-- ripple where it lands -->
+    <ellipse cx="0" cy="70" rx="46" ry="8" fill="none" stroke="#ff3b2f" stroke-opacity="0.35"/>
+    <ellipse cx="0" cy="70" rx="68" ry="12" fill="none" stroke="#ff3b2f" stroke-opacity="0.16"/>
+  </g>
+
+  <!-- wordmark + statement -->
+  <g transform="translate(360,0)">
+    <text x="0" y="116" font-family="'Bodoni Moda',Didot,Georgia,serif" font-weight="900" font-size="74" fill="#f3ecde" letter-spacing="-1">Ink<tspan fill="#ff3b2f">Fuse</tspan></text>
+    <line x1="2" y1="138" x2="402" y2="138" stroke="#2a2632"/>
+    <text x="2" y="162" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="17" fill="#c3bbac">an ink house that never keeps the float</text>
+    <g font-family="'Manrope',Arial,sans-serif" font-size="10.5" font-weight="700" letter-spacing="3" fill="#8a8378">
+      <text x="2" y="194">DROP</text>
+      <text x="74" y="194" fill="#5f594f">·</text>
+      <text x="92" y="194">COLLECT</text>
+      <text x="186" y="194" fill="#5f594f">·</text>
+      <text x="204" y="194">RESELL</text>
+      <text x="276" y="194" fill="#5f594f">·</text>
+      <text x="294" y="194" fill="#ff6a52">TIP</text>
+      <text x="350" y="194" fill="#5f594f">— USDC, ARC</text>
+    </g>
+  </g>
+
+  <!-- print grain overlay -->
+  <rect width="820" height="240" fill="#000" opacity="0.05"/>
+  <rect width="820" height="240" filter="url(#ikGrain)" opacity="0.05" style="mix-blend-mode:overlay"/>
+  <rect x="0.5" y="0.5" width="819" height="239" fill="none" stroke="#2a2632" stroke-width="1"/>
+</svg>
